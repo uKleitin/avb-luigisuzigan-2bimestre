@@ -3,11 +3,14 @@ import { useNavigate } from "react-router-dom";
 
 function Quiz() {
   const navigate = useNavigate();
-
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem("favorites");
+    return saved ? JSON.parse(saved) : [];
+  });
 
   const category = localStorage.getItem("category");
   const difficulty = localStorage.getItem("difficulty");
@@ -15,26 +18,19 @@ function Quiz() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        // Verifica se a API está disponível
         const response = await fetch(
           `https://opentdb.com/api.php?amount=10&category=${category}&difficulty=${difficulty}&type=multiple`
         );
-        
-        // Verifica se a resposta é válida
-        if (!response.ok) {
-          throw new Error("Erro ao carregar as perguntas");
-        }
+        if (!response.ok) throw new Error("Erro ao carregar as perguntas");
 
         const data = await response.json();
-        if (data.results.length === 0) {
-          throw new Error("Nenhuma pergunta encontrada");
-        }
+        if (data.results.length === 0) throw new Error("Nenhuma pergunta encontrada");
 
         setQuestions(data.results);
         setLoading(false);
       } catch (error) {
         console.error("Erro ao carregar as perguntas:", error);
-        setLoading(false);  // Para parar o carregamento mesmo se ocorrer erro
+        setLoading(false);
       }
     };
 
@@ -53,15 +49,21 @@ function Quiz() {
     }
   };
 
-  if (loading) {
-    return <div>Carregando perguntas...</div>;
-  }
+  const toggleFavorite = (question) => {
+    const isFavorited = favorites.some((fav) => fav.question === question.question);
+    const updatedFavorites = isFavorited
+      ? favorites.filter((fav) => fav.question !== question.question)
+      : [...favorites, question];
 
-  if (questions.length === 0) {
-    return <div>Sem perguntas disponíveis ou erro ao carregar as perguntas.</div>;
-  }
+    setFavorites(updatedFavorites);
+    localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+  };
+
+  if (loading) return <div>Carregando perguntas...</div>;
+  if (questions.length === 0) return <div>Sem perguntas disponíveis ou erro ao carregar.</div>;
 
   const current = questions[currentQuestion];
+  const isFavorited = favorites.some((fav) => fav.question === current.question);
 
   return (
     <div className="max-w-md mx-auto bg-gray-800 p-6 rounded-2xl shadow-lg mt-10">
@@ -69,11 +71,19 @@ function Quiz() {
         Pergunta {currentQuestion + 1} de {questions.length}
       </h2>
 
-      <p className="mb-4 text-lg">{current.question}</p>
+      <div className="flex justify-between items-center mb-4">
+        <p className="text-lg">{current.question}</p>
+        <button
+          onClick={() => toggleFavorite(current)}
+          className={`text-2xl ${isFavorited ? "text-yellow-400" : "text-white"}`}
+        >
+          ★
+        </button>
+      </div>
 
       <div className="space-y-4">
         {[...current.incorrect_answers, current.correct_answer]
-          .sort(() => Math.random() - 0.5) // Embaralha as opções
+          .sort(() => Math.random() - 0.5)
           .map((answer, index) => (
             <button
               key={index}

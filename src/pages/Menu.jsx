@@ -1,6 +1,7 @@
 // src/pages/Menu.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 function Menu() {
   const navigate = useNavigate();
@@ -52,6 +53,14 @@ function Menu() {
       >
         Começar Quiz
       </button>
+      
+      <Link
+  to="/favorites"
+  className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded flex justify-center mt-6"
+>
+  Favoritos ★
+</Link>
+      
     </div>
   );
 }
